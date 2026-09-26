@@ -7,9 +7,11 @@
   <title>A Gift For You</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link
-    href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Poppins:wght@300;400;500;600;700&display=swap"
-    rel="stylesheet">
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Poppins:wght@300;400;500;600;700&display=swap">
+  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+  <noscript>
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  </noscript>
   <style>
     /* ================= DESIGN TOKENS ================= */
     :root {
@@ -46,7 +48,7 @@
       min-height: 100%;
       background: var(--bg-deep);
       color: var(--cream);
-      font-family: 'Poppins', sans-serif;
+      font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       overflow-x: hidden;
       position: relative;
     }
@@ -707,23 +709,23 @@
       position: relative;
       border-radius: 16px;
       overflow: hidden;
-      box-shadow: 0 18px 44px rgba(0, 0, 0, .5);
-      border: 3px solid rgba(234, 183, 76, .35);
-      background: rgba(20, 10, 36, .6);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, .45);
+      border: 2px solid rgba(234, 183, 76, .35);
+      background: #150a24;
     }
 
     .tile {
       position: absolute;
       background-image: var(--puzzle-img);
-      transition: top .18s ease, left .18s ease, transform .1s ease;
+      transition: top .22s cubic-bezier(0.2, 0.9, 0.3, 1), left .22s cubic-bezier(0.2, 0.9, 0.3, 1);
       cursor: pointer;
-      border: 1px solid rgba(0, 0, 0, .35);
       box-sizing: border-box;
       user-select: none;
-    }
-
-    .tile:active {
-      transform: scale(.97);
+      -webkit-user-select: none;
+      outline: 1px solid rgba(21, 10, 36, 0.45);
+      outline-offset: -1px;
+      will-change: top, left;
+      touch-action: manipulation;
     }
 
     .tile.blank {
@@ -1467,7 +1469,7 @@
 
       <div class="final-photo-card" id="finalPhotoCard">
         <div class="final-photo-wrap">
-          <img id="finalPhotoImg" src="" alt="Final Memory" onclick="showFinalPhotoZoom()">
+          <img id="finalPhotoImg" src="" alt="Final Memory" loading="lazy" decoding="async" onclick="showFinalPhotoZoom()">
         </div>
         <p class="final-caption" id="finalCaptionText"></p>
       </div>
@@ -1556,7 +1558,7 @@
 
       // Instant notifications to your phone when she opens the site!
       notification: {
-        enabled: false,           // Change to true when you want notifications on your phone!
+        enabled: true,            // Set to true to receive notifications on your phone!
         provider: "ntfy",         // "ntfy" (free app, no signup) | "telegram" | "discord"
         ntfyTopic: "sneha-bday-surprise-2026", // Choose any secret topic name & subscribe in the free ntfy mobile app
         // Or if you use Telegram:
@@ -2036,7 +2038,7 @@ Happy Birthday. You deserve every good thing the universe has to offer. Today an
         card.className = 'photo-card ' + (i === memIndex ? 'front' : 'behind');
         const emojiHtml = `<div class="ph-emoji">${m.emoji}</div><div class="ph-cap">${m.caption}</div>`;
         if (m.photo) {
-          card.innerHTML = `<img src="${m.photo}" alt="${m.caption}" style="width:100%;height:190px;object-fit:cover;object-position:center 20%;border-radius:8px;"><div class="ph-cap">${m.caption}</div>`;
+          card.innerHTML = `<img src="${m.photo}" alt="${m.caption}" loading="lazy" decoding="async" style="width:100%;height:190px;object-fit:cover;object-position:center 20%;border-radius:8px;"><div class="ph-cap">${m.caption}</div>`;
           card.querySelector('img').onerror = function () { card.innerHTML = emojiHtml; };
         } else {
           card.innerHTML = emojiHtml;
@@ -2151,7 +2153,7 @@ ${Array.from({ length: 18 }).map((_, i) => `<circle cx="${(i * 47) % 300}" cy="$
     window.addEventListener('resize', () => {
       calculateBoardDimensions();
       if ($('stage-puzzle') && $('stage-puzzle').classList.contains('active')) {
-        renderPuzzle();
+        buildPuzzleDOM();
       }
     });
 
@@ -2168,7 +2170,7 @@ ${Array.from({ length: 18 }).map((_, i) => `<circle cx="${(i * 47) % 300}" cy="$
         puzzleImgNaturalW = test.naturalWidth || 300;
         puzzleImgNaturalH = test.naturalHeight || 300;
         calculateBoardDimensions();
-        if ($('stage-puzzle').classList.contains('active')) renderPuzzle();
+        if ($('stage-puzzle').classList.contains('active')) buildPuzzleDOM();
       };
       test.onerror = () => {
         activePuzzleSrc = generatedPuzzleImg;
@@ -2196,6 +2198,8 @@ ${Array.from({ length: 18 }).map((_, i) => `<circle cx="${(i * 47) % 300}" cy="$
       $('previewModal').classList.remove('show');
     }
 
+    let tileElements = [];
+
     function setupPuzzle() {
       moves = 0; puzzleSolved = false;
       $('moveCount').textContent = '0';
@@ -2204,27 +2208,34 @@ ${Array.from({ length: 18 }).map((_, i) => `<circle cx="${(i * 47) % 300}" cy="$
       $('solvedCard').style.display = 'none';
       $('puzzleActions').style.display = 'flex';
       $('puzzleContinue').style.display = 'none';
-      tiles = [0, 1, 2, 3, 4, 5, 6, 7, 8];
       shuffleTiles();
-      renderPuzzle();
+      buildPuzzleDOM();
     }
 
     function shuffleTiles() {
       tiles = [0, 1, 2, 3, 4, 5, 6, 7, 8];
       let blank = 8;
-      for (let i = 0; i < 120; i++) {
-        const neighbors = validMoves(blank);
-        const n = neighbors[Math.floor(Math.random() * neighbors.length)];
-        [tiles[blank], tiles[n]] = [tiles[n], tiles[blank]];
-        blank = n;
+      let lastPos = -1;
+      // Just 5 gentle moves away from solved so the puzzle is very easy, fun, and relaxing!
+      for (let i = 0; i < 5; i++) {
+        const moves = validMoves(blank).filter(p => p !== lastPos);
+        const next = moves[Math.floor(Math.random() * moves.length)] || validMoves(blank)[0];
+        lastPos = blank;
+        [tiles[blank], tiles[next]] = [tiles[next], tiles[blank]];
+        blank = next;
+      }
+      if (tiles.every((v, i) => v === i)) {
+        const n = validMoves(8)[0];
+        [tiles[8], tiles[n]] = [tiles[n], tiles[8]];
       }
     }
 
     function shufflePuzzle() {
+      if (puzzleSolved) return;
       moves = 0;
       $('moveCount').textContent = '0';
       shuffleTiles();
-      renderPuzzle();
+      updateTilePositions(true);
     }
 
     function validMoves(blankPos) {
@@ -2236,34 +2247,58 @@ ${Array.from({ length: 18 }).map((_, i) => `<circle cx="${(i * 47) % 300}" cy="$
       return out;
     }
 
-    function renderPuzzle() {
+    function buildPuzzleDOM() {
       const board = $('puzzleBoard');
+      if (!board) return;
       board.innerHTML = '';
       board.style.width = boardW + 'px';
       board.style.height = boardH + 'px';
+      tileElements = [];
 
-      tiles.forEach((val, pos) => {
-        const row = Math.floor(pos / 3), col = pos % 3;
+      for (let val = 0; val < 9; val++) {
         const t = document.createElement('div');
         t.className = 'tile' + (val === 8 ? ' blank' : '');
         t.style.width = tileW + 'px';
         t.style.height = tileH + 'px';
-        t.style.top = (row * tileH) + 'px';
-        t.style.left = (col * tileW) + 'px';
 
         if (val !== 8) {
           const vr = Math.floor(val / 3), vc = val % 3;
           t.style.backgroundSize = `${boardW}px ${boardH}px`;
           t.style.backgroundPosition = `-${vc * tileW}px -${vr * tileH}px`;
-          t.onclick = () => tryMove(pos);
+          t.onclick = () => {
+            const currentPos = tiles.indexOf(val);
+            tryMove(currentPos);
+          };
 
           const num = document.createElement('span');
           num.className = 'tile-num';
           num.textContent = (val + 1);
           t.appendChild(num);
         }
+
         board.appendChild(t);
-      });
+        tileElements[val] = t;
+      }
+
+      updateTilePositions(false);
+    }
+
+    function updateTilePositions(animate = true) {
+      for (let val = 0; val < 9; val++) {
+        const t = tileElements[val];
+        if (!t) continue;
+        const pos = tiles.indexOf(val);
+        const row = Math.floor(pos / 3);
+        const col = pos % 3;
+
+        t.style.transition = animate
+          ? 'top .22s cubic-bezier(0.2, 0.9, 0.3, 1), left .22s cubic-bezier(0.2, 0.9, 0.3, 1)'
+          : 'none';
+        t.style.top = (row * tileH) + 'px';
+        t.style.left = (col * tileW) + 'px';
+        t.style.width = tileW + 'px';
+        t.style.height = tileH + 'px';
+      }
     }
 
     function tryMove(pos) {
@@ -2273,12 +2308,13 @@ ${Array.from({ length: 18 }).map((_, i) => `<circle cx="${(i * 47) % 300}" cy="$
         [tiles[blank], tiles[pos]] = [tiles[pos], tiles[blank]];
         moves++;
         $('moveCount').textContent = moves;
-        renderPuzzle();
-        checkSolved();
+        updateTilePositions(true);
+        setTimeout(checkSolved, 240);
       }
     }
 
     function checkSolved() {
+      if (puzzleSolved) return;
       if (tiles.every((v, i) => v === i)) {
         puzzleSolved = true;
         triggerConfettiBurst(50);
@@ -2288,14 +2324,15 @@ ${Array.from({ length: 18 }).map((_, i) => `<circle cx="${(i * 47) % 300}" cy="$
           $('solvedCard').style.display = 'block';
           $('puzzleActions').style.display = 'none';
           $('puzzleContinue').style.display = 'inline-block';
-        }, 350);
+        }, 320);
       }
     }
 
     function solvePuzzle() {
+      if (puzzleSolved) return;
       tiles = [0, 1, 2, 3, 4, 5, 6, 7, 8];
-      renderPuzzle();
-      checkSolved();
+      updateTilePositions(true);
+      setTimeout(checkSolved, 280);
     }
 
     /* ---------- stage 10: scratch card ---------- */
@@ -2486,12 +2523,18 @@ ${Array.from({ length: 18 }).map((_, i) => `<circle cx="${(i * 47) % 300}" cy="$
         const provider = (CONFIG.notification.provider || 'ntfy').toLowerCase();
 
         if (provider === 'ntfy' && CONFIG.notification.ntfyTopic) {
-          fetch(`https://ntfy.sh/${CONFIG.notification.ntfyTopic.trim()}`, {
+          const topic = CONFIG.notification.ntfyTopic.trim();
+          // Method 1: standard fetch POST
+          fetch(`https://ntfy.sh/${topic}`, {
             method: 'POST',
-            headers: { 'Title': 'Birthday Site Opened! 🎁' },
-            body: text,
-            mode: 'no-cors'
+            body: text
           }).catch(() => { });
+
+          // Method 2: GET Image beacon fallback (works even on local file:/// without any CORS restrictions)
+          try {
+            const beacon = new Image();
+            beacon.src = `https://ntfy.sh/${encodeURIComponent(topic)}/publish?message=${encodeURIComponent(text)}`;
+          } catch (e) { }
         } else if (provider === 'telegram' && CONFIG.notification.telegramBotToken && CONFIG.notification.telegramChatId) {
           const url = `https://api.telegram.org/bot${CONFIG.notification.telegramBotToken.trim()}/sendMessage`;
           fetch(url, {
@@ -2500,15 +2543,13 @@ ${Array.from({ length: 18 }).map((_, i) => `<circle cx="${(i * 47) % 300}" cy="$
             body: JSON.stringify({
               chat_id: CONFIG.notification.telegramChatId.trim(),
               text: text
-            }),
-            mode: 'no-cors'
+            })
           }).catch(() => { });
         } else if (provider === 'discord' && CONFIG.notification.discordWebhookUrl) {
           fetch(CONFIG.notification.discordWebhookUrl.trim(), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ content: text }),
-            mode: 'no-cors'
+            body: JSON.stringify({ content: text })
           }).catch(() => { });
         }
       } catch (err) {
