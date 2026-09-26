@@ -1416,7 +1416,7 @@
         mainVolume: 0.7,       // Volume level (0.0 to 1.0)
 
         // 2) Letter song (fades in when opening the envelope in the final stage)
-        letterTrack: "audio/letter-song.mp3",
+        letterTrack: "audio/letter-song.m4a",
         letterStartTime: "2:25", // Start letter song from e.g. "0:15" or 15 (seconds)
         letterEndTime: 0,        // Optional end time in seconds (0 = play till end)
         letterVolume: 0.7
@@ -1566,12 +1566,18 @@ Happy Birthday. You deserve every good thing the universe has to offer. Today an
       };
       audioEl.addEventListener('timeupdate', timeGuard);
 
+      // Fallback timer so audio never stays muted if network is slow
+      setTimeout(tryUnmute, 3200);
+
       const p = audioEl.play();
       if (p !== undefined) {
         p.then(() => {
           doSeek();
         }).catch(err => {
           console.warn("Audio play error:", err);
+          if (src.endsWith('.m4a')) {
+            playSongWithSeek(audioEl, src.replace('.m4a', '.mp3'), startSec, targetVol, onDone);
+          }
         });
       }
     }
