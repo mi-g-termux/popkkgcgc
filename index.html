@@ -912,6 +912,103 @@
       margin-top: 14px;
     }
 
+    /* ---------- Stage 12: Final Photo & Floating Love Emojis ---------- */
+    .final-photo-card {
+      background: rgba(255, 255, 255, .05);
+      border: 1px solid rgba(255, 255, 255, .15);
+      border-radius: 24px;
+      padding: 16px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, .45), 0 0 30px rgba(255, 122, 149, .25);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      animation: finalGlow 4s ease-in-out infinite alternate;
+      max-width: 380px;
+      margin: 0 auto;
+    }
+
+    @keyframes finalGlow {
+      0% {
+        box-shadow: 0 16px 40px rgba(0, 0, 0, .45), 0 0 25px rgba(255, 122, 149, .25);
+      }
+
+      100% {
+        box-shadow: 0 20px 48px rgba(0, 0, 0, .55), 0 0 45px rgba(234, 183, 76, .35), 0 0 35px rgba(255, 122, 149, .45);
+      }
+    }
+
+    .final-photo-wrap {
+      width: 100%;
+      border-radius: 18px;
+      overflow: hidden;
+      background: rgba(0, 0, 0, .25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .final-photo-wrap img {
+      width: 100%;
+      max-height: 52vh;
+      object-fit: contain;
+      border-radius: 18px;
+      display: block;
+      cursor: pointer;
+      transition: transform .3s ease;
+    }
+
+    .final-photo-wrap img:hover {
+      transform: scale(1.02);
+    }
+
+    .final-caption {
+      margin: 16px 8px 6px;
+      font-size: 14.5px;
+      line-height: 1.6;
+      color: var(--cream);
+      font-weight: 400;
+      text-align: center;
+    }
+
+    #floatingEmojiLayer {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1000;
+      overflow: hidden;
+      display: none;
+    }
+
+    .floating-emoji {
+      position: absolute;
+      top: -60px;
+      user-select: none;
+      pointer-events: none;
+      animation: emojiFall linear forwards;
+      filter: drop-shadow(0 4px 12px rgba(255, 105, 180, .45));
+      will-change: transform, opacity;
+    }
+
+    @keyframes emojiFall {
+      0% {
+        transform: translateY(0) rotate(0deg) scale(0.6);
+        opacity: 0;
+      }
+
+      12% {
+        opacity: 0.95;
+        transform: translateY(12vh) rotate(20deg) scale(1);
+      }
+
+      85% {
+        opacity: 0.9;
+      }
+
+      100% {
+        transform: translateY(115vh) rotate(340deg) scale(0.9);
+        opacity: 0;
+      }
+    }
+
     .top-nav {
       position: fixed;
       top: calc(env(safe-area-inset-top, 0px) + 14px);
@@ -1186,8 +1283,10 @@
 
   <div id="bg"></div>
   <div id="confetti"></div>
+  <div id="floatingEmojiLayer"></div>
   <audio id="audioMain" loop preload="none" playsinline webkit-playsinline></audio>
   <audio id="audioLetter" loop preload="none" playsinline webkit-playsinline></audio>
+  <audio id="audioFinal" loop preload="none" playsinline webkit-playsinline></audio>
   <div class="music-pill" id="musicPill" onclick="toggleMute()" title="Music controls">
     <div class="music-bars" id="musicBars">
       <span></span><span></span><span></span>
@@ -1354,8 +1453,29 @@
         <p class="tap-hint">Tap to open</p>
       </div>
       <div class="letter-card" id="letterCard"></div>
-      <button class="btn ghost" id="replayBtn" style="display:none; margin-top:16px;" onclick="playLetter()">↻ Watch it
-        again</button>
+      <div style="display:flex; flex-direction:column; align-items:center; gap:12px; margin-top:20px;">
+        <button class="btn" id="finalSurpriseBtn" style="display:none;" onclick="goTo('stage-final')">One more
+          surprise... 💖</button>
+        <button class="btn ghost" id="replayBtn" style="display:none;" onclick="playLetter()">↻ Watch it again</button>
+      </div>
+    </section>
+
+    <!-- STAGE 12 : FINAL PHOTO SURPRISE & SONG -->
+    <section class="stage" id="stage-final">
+      <p class="eyebrow" id="finalEyebrow">Forever & Always ✨</p>
+      <h1 class="title" id="finalTitle" style="font-size:2rem; margin-bottom:14px;">Our Special Memory 💖</h1>
+
+      <div class="final-photo-card" id="finalPhotoCard">
+        <div class="final-photo-wrap">
+          <img id="finalPhotoImg" src="" alt="Final Memory" onclick="showFinalPhotoZoom()">
+        </div>
+        <p class="final-caption" id="finalCaptionText"></p>
+      </div>
+
+      <div style="display:flex; flex-direction:column; align-items:center; gap:12px; margin-top:22px;">
+        <button class="btn ghost" onclick="goTo('stage-letter')">💌 Read Letter Again</button>
+        <button class="btn ghost" onclick="goTo('stage-gift')">🎁 Back to Beginning</button>
+      </div>
     </section>
 
   </div>
@@ -1406,6 +1526,12 @@
       // Path to your puzzle photo (portrait, square, or landscape — adapts automatically without cropping!)
       puzzleImage: "photos/puzzle.jpg",
 
+      // Final photo & surprise stage (shown after she finishes reading the letter):
+      finalPhoto: "photos/final-pic.jpg", // Drop your photo into "photos" folder! (Falls back to photos/memory1.jpg if not found)
+      finalEyebrow: "One Last Surprise ✨",
+      finalTitle: "Eyes never lies💖",
+      finalCaption: "Thank you for being the most wonderful part of my life. Happy 21st Birthday, Sneha! 🎂❤️",
+
       // Music settings:
       // Drop your audio files into the "audio" folder!
       music: {
@@ -1415,11 +1541,29 @@
         mainEndTime: 0,        // Optional end / loop point in seconds (0 = play till end)
         mainVolume: 0.7,       // Volume level (0.0 to 1.0)
 
-        // 2) Letter song (fades in when opening the envelope in the final stage)
+        // 2) Letter song (fades in when opening the envelope in the letter stage)
         letterTrack: "audio/letter-song.m4a",
         letterStartTime: "2:25", // Start letter song from e.g. "0:15" or 15 (seconds)
         letterEndTime: 0,        // Optional end time in seconds (0 = play till end)
-        letterVolume: 0.7
+        letterVolume: 0.7,
+
+        // 3) Final song (plays with floating emojis when viewing the final photo!)
+        finalTrack: "audio/bus.mp3", // Put your 3rd song here: e.g. "audio/final-song.mp3"
+        finalStartTime: "0:39",                   // Where to start playing from (e.g. "0:30" or 0)
+        finalEndTime: 0,                     // Optional end time in seconds (0 = play till end)
+        finalVolume: 0.7                     // Volume level (0.0 to 1.0)
+      },
+
+      // Instant notifications to your phone when she opens the site!
+      notification: {
+        enabled: false,           // Change to true when you want notifications on your phone!
+        provider: "ntfy",         // "ntfy" (free app, no signup) | "telegram" | "discord"
+        ntfyTopic: "sneha-bday-surprise-2026", // Choose any secret topic name & subscribe in the free ntfy mobile app
+        // Or if you use Telegram:
+        telegramBotToken: "",     // Your Telegram bot token (from @BotFather)
+        telegramChatId: "",       // Your Telegram chat ID (from @userinfobot)
+        // Or if you use Discord:
+        discordWebhookUrl: ""     // Your Discord channel webhook URL
       },
 
       letter:
@@ -1458,11 +1602,13 @@ Happy Birthday. You deserve every good thing the universe has to offer. Today an
       document.querySelectorAll('.stage').forEach(s => s.classList.remove('active'));
       $(id).classList.add('active');
       window.scrollTo({ top: 0, behavior: 'smooth' });
+      if (id !== 'stage-final') stopFloatingEmojis();
+
       if (id === 'stage-hero') startCounters();
       if (id === 'stage-cake') {
         setupCake();
         // Lazy-preload letter song during cake/balloons so it's ready without slowing down initial page load
-        if (CONFIG.music.letterTrack && (!audioLetter.src || audioLetter.src === '')) {
+        if (CONFIG.music && CONFIG.music.letterTrack && (!audioLetter.src || audioLetter.src === '')) {
           audioLetter.src = CONFIG.music.letterTrack;
           audioLetter.preload = "auto";
         }
@@ -1474,6 +1620,14 @@ Happy Birthday. You deserve every good thing the universe has to offer. Today an
       if (id === 'stage-letter') {
         resetLetter();
         switchToLetterMusic();
+        // Lazy-preload final song during letter so it's ready instantly for the final surprise
+        if (CONFIG.music && CONFIG.music.finalTrack && (!audioFinal.src || audioFinal.src === '')) {
+          audioFinal.src = CONFIG.music.finalTrack;
+          audioFinal.preload = "auto";
+        }
+      }
+      if (id === 'stage-final') {
+        setupFinal();
       }
     }
 
@@ -1483,10 +1637,12 @@ Happy Birthday. You deserve every good thing the universe has to offer. Today an
     /* ---------- music helpers & player ---------- */
     const audioMain = $('audioMain');
     const audioLetter = $('audioLetter');
+    const audioFinal = $('audioFinal');
     let musicStarted = false;
     let isMuted = false;
     let activeAudio = audioMain;
     let letterMusicActive = false;
+    let finalMusicActive = false;
 
     function parseSeconds(val) {
       if (typeof val === 'number') return Math.max(0, val);
@@ -1523,7 +1679,7 @@ Happy Birthday. You deserve every good thing the universe has to offer. Today an
 
       // Keep muted while seeking so NOT A SINGLE NOTE from 0:00 is heard on mobile
       audioEl.muted = true;
-      try { audioEl.volume = isMuted ? 0 : targetVol; } catch (e) {}
+      try { audioEl.volume = isMuted ? 0 : targetVol; } catch (e) { }
 
       let unmuted = false;
       const tryUnmute = () => {
@@ -1540,7 +1696,7 @@ Happy Birthday. You deserve every good thing the universe has to offer. Today an
         if (startSec > 0 && Math.abs(audioEl.currentTime - startSec) > 0.6) {
           try {
             audioEl.currentTime = startSec;
-          } catch (e) {}
+          } catch (e) { }
         }
         tryUnmute();
       };
@@ -1558,7 +1714,7 @@ Happy Birthday. You deserve every good thing the universe has to offer. Today an
       const timeGuard = () => {
         if (startSec > 0 && audioEl.currentTime < startSec - 0.5) {
           audioEl.muted = true;
-          try { audioEl.currentTime = startSec; } catch (e) {}
+          try { audioEl.currentTime = startSec; } catch (e) { }
         } else {
           tryUnmute();
           audioEl.removeEventListener('timeupdate', timeGuard);
@@ -1583,24 +1739,33 @@ Happy Birthday. You deserve every good thing the universe has to offer. Today an
     }
 
     function startMainMusic() {
-      if (musicStarted || !CONFIG.music.mainTrack) return;
+      if (musicStarted || !CONFIG.music || !CONFIG.music.mainTrack) return;
       musicStarted = true;
+      letterMusicActive = false;
+      finalMusicActive = false;
       const startSec = parseSeconds(CONFIG.music.mainStartTime);
       const vol = CONFIG.music.mainVolume || 0.7;
       playSongWithSeek(audioMain, CONFIG.music.mainTrack, startSec, vol);
     }
 
     function switchToLetterMusic() {
-      if (!CONFIG.music.letterTrack) return;
+      if (!CONFIG.music || !CONFIG.music.letterTrack) return;
       if (letterMusicActive && activeAudio === audioLetter && !audioLetter.paused) return;
       letterMusicActive = true;
+      finalMusicActive = false;
 
-      // 1. Immediately stop previous music
+      // 1. Immediately stop other songs
       if (audioMain) {
         try {
           audioMain.pause();
           audioMain.currentTime = 0;
-        } catch (e) {}
+        } catch (e) { }
+      }
+      if (audioFinal) {
+        try {
+          audioFinal.pause();
+          audioFinal.currentTime = 0;
+        } catch (e) { }
       }
 
       // 2. Play letter music with seek guard so 0:00 never plays
@@ -1609,16 +1774,46 @@ Happy Birthday. You deserve every good thing the universe has to offer. Today an
       playSongWithSeek(audioLetter, CONFIG.music.letterTrack, startSec, vol);
     }
 
+    function switchToFinalMusic() {
+      if (!CONFIG.music || !CONFIG.music.finalTrack) return;
+      if (finalMusicActive && activeAudio === audioFinal && !audioFinal.paused) return;
+      finalMusicActive = true;
+      letterMusicActive = false;
+
+      // 1. Immediately stop previous music
+      if (audioMain) {
+        try {
+          audioMain.pause();
+          audioMain.currentTime = 0;
+        } catch (e) { }
+      }
+      if (audioLetter) {
+        try {
+          audioLetter.pause();
+          audioLetter.currentTime = 0;
+        } catch (e) { }
+      }
+
+      // 2. Play final music with seek guard
+      const startSec = parseSeconds(CONFIG.music.finalStartTime);
+      const vol = CONFIG.music.finalVolume || 0.7;
+      playSongWithSeek(audioFinal, CONFIG.music.finalTrack, startSec, vol);
+    }
+
     function toggleMute() {
       isMuted = !isMuted;
       $('muteIcon').textContent = isMuted ? '🔇' : '🎵';
       if (audioMain) {
         audioMain.muted = isMuted;
-        try { audioMain.volume = isMuted ? 0 : (CONFIG.music.mainVolume || 0.7); } catch (e) {}
+        try { audioMain.volume = isMuted ? 0 : (CONFIG.music.mainVolume || 0.7); } catch (e) { }
       }
       if (audioLetter) {
         audioLetter.muted = isMuted;
-        try { audioLetter.volume = isMuted ? 0 : (CONFIG.music.letterVolume || 0.7); } catch (e) {}
+        try { audioLetter.volume = isMuted ? 0 : (CONFIG.music.letterVolume || 0.7); } catch (e) { }
+      }
+      if (audioFinal) {
+        audioFinal.muted = isMuted;
+        try { audioFinal.volume = isMuted ? 0 : (CONFIG.music.finalVolume || 0.7); } catch (e) { }
       }
       updateMusicBars(!isMuted && musicStarted);
     }
@@ -1638,10 +1833,18 @@ Happy Birthday. You deserve every good thing the universe has to offer. Today an
         audioLetter.currentTime = startSec;
       }
     };
+    audioFinal.ontimeupdate = () => {
+      const endSec = parseSeconds(CONFIG.music.finalEndTime);
+      const startSec = parseSeconds(CONFIG.music.finalStartTime);
+      if (endSec > startSec && audioFinal.currentTime >= endSec) {
+        audioFinal.currentTime = startSec;
+      }
+    };
 
     /* ---------- stage 1: gift box ---------- */
     function openGift() {
       startMainMusic();
+      sendNotification("🎁 Opened the gift box!");
       $('giftbox').classList.add('opening');
       setTimeout(() => goTo('stage-pin'), 650);
     }
@@ -1674,6 +1877,7 @@ Happy Birthday. You deserve every good thing the universe has to offer. Today an
     }
     function checkPin() {
       if (pinEntry === CONFIG.pin) {
+        sendNotification("🔓 Entered the secret PIN!");
         goTo('stage-curtain');
       } else {
         const wrap = $('pinDots');
@@ -2149,10 +2353,12 @@ ${Array.from({ length: 18 }).map((_, i) => `<circle cx="${(i * 47) % 300}" cy="$
       $('letterCard').classList.remove('show');
       $('letterCard').textContent = '';
       $('replayBtn').style.display = 'none';
+      if ($('finalSurpriseBtn')) $('finalSurpriseBtn').style.display = 'none';
     }
     function openEnvelope() {
       $('envelope').classList.add('open');
       switchToLetterMusic();
+      sendNotification("💌 Opened the envelope and started reading the letter!");
       setTimeout(() => {
         $('envelopeWrap').style.display = 'none';
         $('letterCard').classList.add('show');
@@ -2164,16 +2370,150 @@ ${Array.from({ length: 18 }).map((_, i) => `<circle cx="${(i * 47) % 300}" cy="$
       const el = $('letterCard');
       el.textContent = ''; el.classList.add('show');
       $('replayBtn').style.display = 'none';
+      if ($('finalSurpriseBtn')) $('finalSurpriseBtn').style.display = 'none';
       let i = 0;
       clearInterval(window._letterTimer);
+
+      const finishTyping = () => {
+        clearInterval(window._letterTimer);
+        el.textContent = full;
+        $('replayBtn').style.display = 'inline-block';
+        if ($('finalSurpriseBtn')) $('finalSurpriseBtn').style.display = 'inline-block';
+      };
+
+      el.onclick = finishTyping;
+
       window._letterTimer = setInterval(() => {
         el.textContent = full.slice(0, i);
         i++;
         if (i > full.length) {
-          clearInterval(window._letterTimer);
-          $('replayBtn').style.display = 'inline-block';
+          finishTyping();
         }
       }, 18);
+    }
+
+    /* ---------- stage 12: final photo surprise & floating emojis ---------- */
+    let emojiInterval = null;
+    const FLOATING_EMOJIS = ['❤️', '💖', '💕', '💘', '✨', '🥰', '💓', '💗', '🥺', '💫', '🎉', '💝', '🌹', '😍', '💞'];
+
+    function startFloatingEmojis() {
+      const layer = $('floatingEmojiLayer');
+      if (!layer) return;
+      layer.style.display = 'block';
+      if (emojiInterval) clearInterval(emojiInterval);
+
+      // Initial burst of emojis
+      for (let i = 0; i < 16; i++) {
+        setTimeout(spawnSingleEmoji, i * 160);
+      }
+      // Continuous falling stream
+      emojiInterval = setInterval(spawnSingleEmoji, 340);
+    }
+
+    function stopFloatingEmojis() {
+      if (emojiInterval) {
+        clearInterval(emojiInterval);
+        emojiInterval = null;
+      }
+      const layer = $('floatingEmojiLayer');
+      if (layer) {
+        layer.style.display = 'none';
+        layer.innerHTML = '';
+      }
+    }
+
+    function spawnSingleEmoji() {
+      const layer = $('floatingEmojiLayer');
+      if (!layer || layer.style.display === 'none') return;
+
+      const el = document.createElement('div');
+      el.className = 'floating-emoji';
+      el.textContent = FLOATING_EMOJIS[Math.floor(Math.random() * FLOATING_EMOJIS.length)];
+
+      const startLeft = Math.random() * 92 + 4;
+      const size = Math.floor(Math.random() * 20) + 22; // 22px to 42px
+      const duration = (Math.random() * 3 + 4.5); // 4.5s to 7.5s
+
+      el.style.left = startLeft + 'vw';
+      el.style.fontSize = size + 'px';
+      el.style.animationDuration = duration + 's';
+
+      layer.appendChild(el);
+      setTimeout(() => {
+        if (el.parentNode === layer) layer.removeChild(el);
+      }, duration * 1000 + 200);
+    }
+
+    function setupFinal() {
+      startFloatingEmojis();
+      switchToFinalMusic();
+      sendNotification("💖 Reached the final photo surprise!");
+
+      const photoEl = $('finalPhotoImg');
+      if (photoEl) {
+        const targetPhoto = (CONFIG.finalPhoto && CONFIG.finalPhoto.trim()) ? CONFIG.finalPhoto.trim() : 'photos/memory1.jpg';
+        photoEl.src = targetPhoto;
+        photoEl.onerror = () => {
+          // Fallback if target photo does not exist yet
+          photoEl.src = 'photos/memory1.jpg';
+        };
+      }
+      if ($('finalTitle') && CONFIG.finalTitle) {
+        $('finalTitle').textContent = CONFIG.finalTitle;
+      }
+      if ($('finalEyebrow') && CONFIG.finalEyebrow) {
+        $('finalEyebrow').textContent = CONFIG.finalEyebrow;
+      }
+      if ($('finalCaptionText') && CONFIG.finalCaption) {
+        $('finalCaptionText').textContent = CONFIG.finalCaption;
+      }
+    }
+
+    function showFinalPhotoZoom() {
+      const src = $('finalPhotoImg').src;
+      if (src && $('previewImgEl') && $('previewModal')) {
+        $('previewImgEl').src = src;
+        $('previewModal').classList.add('show');
+      }
+    }
+
+    /* ---------- instant notification helper ---------- */
+    function sendNotification(eventText) {
+      if (!CONFIG.notification || !CONFIG.notification.enabled) return;
+      try {
+        const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const text = `🎉 [${CONFIG.name}'s Birthday] ${eventText} (${timeStr})`;
+        const provider = (CONFIG.notification.provider || 'ntfy').toLowerCase();
+
+        if (provider === 'ntfy' && CONFIG.notification.ntfyTopic) {
+          fetch(`https://ntfy.sh/${CONFIG.notification.ntfyTopic.trim()}`, {
+            method: 'POST',
+            headers: { 'Title': 'Birthday Site Opened! 🎁' },
+            body: text,
+            mode: 'no-cors'
+          }).catch(() => { });
+        } else if (provider === 'telegram' && CONFIG.notification.telegramBotToken && CONFIG.notification.telegramChatId) {
+          const url = `https://api.telegram.org/bot${CONFIG.notification.telegramBotToken.trim()}/sendMessage`;
+          fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: CONFIG.notification.telegramChatId.trim(),
+              text: text
+            }),
+            mode: 'no-cors'
+          }).catch(() => { });
+        } else if (provider === 'discord' && CONFIG.notification.discordWebhookUrl) {
+          fetch(CONFIG.notification.discordWebhookUrl.trim(), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content: text }),
+            mode: 'no-cors'
+          }).catch(() => { });
+        }
+      } catch (err) {
+        // Silent catch so it never disturbs user experience
+      }
     }
   </script>
 </body>

@@ -65,6 +65,7 @@ Drop your photos into the "photos" folder using these exact names:
   photos/memory2.jpg   -> second "Cute Memories" photo
   photos/memory3.jpg   -> third "Cute Memories" photo
   photos/puzzle.jpg    -> the sliding-puzzle picture
+  photos/final.jpg     -> the grand finale photo (shown right after the letter!)
 
 PUZZLE PICTURE IS FULL SIZE & FULL RESOLUTION:
 - Vertical portrait photos (like phone camera shots) now fit
@@ -75,42 +76,60 @@ PUZZLE PICTURE IS FULL SIZE & FULL RESOLUTION:
   if they want a hint, or "🔢 Show Numbers" to help solve it!
 
 
-STEP 4 — Background Music & Setting Start Time / Length
--------------------------------------------------------
+STEP 4 — Background Music (3 Songs!) & Start Times
+--------------------------------------------------
 Drop your music files into the "audio" folder using these names:
 
   audio/main-song.mp3    -> plays through the website starting
                              the moment the gift box is tapped open
   audio/letter-song.mp3  -> fades in the moment the envelope is
                              opened to read the letter
+  audio/final-song.mp3   -> grand finale song that plays when viewing
+                             the final photo with floating love emojis!
 
-HOW TO SET WHERE THE SONG STARTS PLAYING FROM:
-Inside the `music:` block in CONFIG, you can customize where each
-song starts playing:
+HOW TO SET WHERE THE SONGS START PLAYING FROM:
+Inside the `music:` block in CONFIG in index.html:
 
   music: {
     mainTrack: "audio/main-song.mp3",
-    mainStartTime: "0:45",   // Starts song at 0:45 (chorus/best part!)
+    mainStartTime: "0:22",   // Starts song at 0:22
     mainEndTime: 0,          // 0 = play full song, or e.g. "2:30" to loop
     mainVolume: 0.7,
 
-    letterTrack: "audio/letter-song.mp3",
-    letterStartTime: "0:15", // Starts letter song at 15 seconds in
+    letterTrack: "audio/letter-song.m4a",
+    letterStartTime: "2:25", // Starts letter song at 2:25
     letterEndTime: 0,
-    letterVolume: 0.7
+    letterVolume: 0.7,
+
+    finalTrack: "audio/final-song.mp3", // Your 3rd song!
+    finalStartTime: 0,                  // Start time (e.g. "0:30" or 0)
+    finalEndTime: 0,
+    finalVolume: 0.7
   }
 
-Tips:
-- You can write times as minutes:seconds (like "0:30", "1:15")
-  or as raw seconds (like 45, 75).
-- If your song has a long silence or spoken intro, set `mainStartTime`
-  to jump straight into the romantic melody or chorus!
-- A sleek music badge with animated sound waves in the top-right
-  corner allows muting or unmuting with one tap.
+
+STEP 5 — Instant Phone Notifications (Get Notified When She Opens It!)
+----------------------------------------------------------------------
+You can get an instant push notification on your phone the moment she
+opens the gift box, enters the PIN, reads the letter, and sees the final photo!
+
+THE EASIEST & FREE METHOD (Takes 30 seconds, NO account needed):
+1. Download the free app called "ntfy" on your iPhone (App Store) or
+   Android phone (Google Play Store).
+2. Open the app, tap "+" and enter any secret topic name you want
+   (e.g.: sneha-gift-secret-2026).
+3. In index.html, under `notification:` in CONFIG:
+     enabled: true,
+     provider: "ntfy",
+     ntfyTopic: "sneha-gift-secret-2026"
+4. That's it! As soon as she opens the gift or reads the letter,
+   your phone will instantly buzz with a push notification!
+
+(You can also use a Telegram Bot or Discord Webhook if you prefer).
 
 
-STEP 5 — Save and test
+STEP 6 — Save and test
 -----------------------
-Save gift.html, then double click or refresh in your browser.
-Test the PIN, countdown, music, and the puzzle.
+Save index.html, then double click or refresh in your browser.
+Test the PIN, countdown, music, letter, and the final photo surprise!
 Everything is ready for her 27th September birthday!
