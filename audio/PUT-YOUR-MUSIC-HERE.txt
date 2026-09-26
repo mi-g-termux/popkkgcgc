@@ -1,0 +1,17 @@
+Drop your two music files into this folder using these EXACT names,
+and they'll play automatically — no code editing needed:
+
+  main-song.mp3    -> plays through the whole site, starting the
+                       moment the gift box is tapped open
+  letter-song.mp3  -> fades in the moment the envelope is opened
+                       to read the letter (replacing main-song)
+
+Notes:
+- .mp3 works everywhere. If your file is a different format (.wav,
+  .m4a), either convert it to .mp3, or open gift.html, search for
+  CONFIG, and change the matching filename's ending to match your
+  file (e.g. "audio/main-song.wav").
+- Leaving either file out just means that track stays silent —
+  nothing will break.
+- A small 🔊 button in the top-right corner of the site lets her
+  mute or unmute at any time.

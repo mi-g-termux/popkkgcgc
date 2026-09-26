@@ -1,0 +1,20 @@
+Drop your image files into this folder using these EXACT names,
+and they'll show up on the website automatically — no code editing
+needed:
+
+  memory1.jpg   -> first "Cute Memories" photo
+  memory2.jpg   -> second "Cute Memories" photo
+  memory3.jpg   -> third "Cute Memories" photo
+  puzzle.jpg    -> the picture used for the sliding puzzle
+                    (a roughly SQUARE photo works best)
+
+Notes:
+- If your photo is a .png or .jpeg instead of .jpg, either rename
+  the file to end in .jpg, or open gift.html, search for CONFIG,
+  and change the matching filename's ending to match your file
+  (e.g. "photos/memory1.png").
+- Until a file is added, that spot will just show a placeholder
+  emoji instead — nothing will look broken.
+- Want more or fewer memory photos? Open gift.html, search for
+  CONFIG, and add/remove lines inside the "memories" list — see
+  HOW-TO-EDIT.txt for the full guide.

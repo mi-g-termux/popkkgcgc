@@ -1,0 +1,116 @@
+HOW TO EDIT YOUR GIFT WEBSITE
+==============================
+
+The whole website is one file: gift.html
+You edit it with a plain TEXT EDITOR (Notepad on Windows, TextEdit
+on Mac — just make sure TextEdit is set to "Plain Text" mode, or
+use a free editor like VS Code / Notepad++). Do NOT use Word.
+
+To preview your changes: double-click gift.html and it opens in
+your browser. Edit -> save -> refresh the browser to see it update.
+
+
+STEP 1 — Open the file and find the settings
+---------------------------------------------
+Open gift.html in your text editor, then search (Ctrl+F / Cmd+F)
+for the word:  CONFIG
+
+You'll land on a block that looks like this:
+
+  const CONFIG = {
+    name: "Sneha",
+    pin: "2777",
+    ...
+  };
+
+Everything you need to personalize is inside these { } brackets.
+You never need to touch anything below this block.
+
+
+STEP 2 — Change the text & Birthday Settings
+--------------------------------------------
+Just replace the words INSIDE the quote marks. Keep the quote
+marks themselves, and keep the comma at the end of each line.
+
+  name: "Sneha"              -> the recipient's name
+  pin: "2777"                -> 4-digit code to unlock the site
+  pinHint: "Hint: 2777 💗"   -> hint shown above the keypad
+  birthDate: "2005-09-27T00:00:00" -> birth date (YYYY-MM-DD format)
+  turningAge: 21             -> the milestone age she is turning!
+  
+  HOW THE BIRTHDAY COUNTDOWN WORKS:
+  - On 26th September (before 12:00 AM midnight):
+    The website displays a live countdown:
+    "Counting down to 12:00 AM Midnight — Turning 21!"
+    with live Days, Hours, Minutes, and Seconds ticking down!
+    Plus a "🎉 Celebrate 21 Now!" button if you want to preview
+    or celebrate immediately!
+  - At 12:00 AM Midnight (27th September):
+    The site automatically bursts with confetti and celebrates:
+    "Happy 21st Birthday, Sneha! Officially 21 Years Old Today!"
+    with 21 Years, 0 Days, 0 Hours, 0 Minutes!
+
+  candleCount: 5             -> how many candles on the cake
+  wishes: [ "...", "...", ]  -> the 6 messages revealed by popping balloons
+  letter: `...`              -> the final letter. Keep {name} anywhere
+                                 you want their name inserted automatically
+
+
+STEP 3 — Photos & Puzzle Picture
+---------------------------------
+The "photos" folder is already inside this zip and wired up.
+Drop your photos into the "photos" folder using these exact names:
+
+  photos/memory1.jpg   -> first "Cute Memories" photo
+  photos/memory2.jpg   -> second "Cute Memories" photo
+  photos/memory3.jpg   -> third "Cute Memories" photo
+  photos/puzzle.jpg    -> the sliding-puzzle picture
+
+PUZZLE PICTURE IS FULL SIZE & FULL RESOLUTION:
+- Vertical portrait photos (like phone camera shots) now fit
+  PERFECTLY in their natural aspect ratio!
+- No more stretching, no more distortion, and no cutting off!
+- When completed, the full portrait shows completely uncropped.
+- Players can also tap "👁️ Preview Photo" to view the picture
+  if they want a hint, or "🔢 Show Numbers" to help solve it!
+
+
+STEP 4 — Background Music & Setting Start Time / Length
+-------------------------------------------------------
+Drop your music files into the "audio" folder using these names:
+
+  audio/main-song.mp3    -> plays through the website starting
+                             the moment the gift box is tapped open
+  audio/letter-song.mp3  -> fades in the moment the envelope is
+                             opened to read the letter
+
+HOW TO SET WHERE THE SONG STARTS PLAYING FROM:
+Inside the `music:` block in CONFIG, you can customize where each
+song starts playing:
+
+  music: {
+    mainTrack: "audio/main-song.mp3",
+    mainStartTime: "0:45",   // Starts song at 0:45 (chorus/best part!)
+    mainEndTime: 0,          // 0 = play full song, or e.g. "2:30" to loop
+    mainVolume: 0.7,
+
+    letterTrack: "audio/letter-song.mp3",
+    letterStartTime: "0:15", // Starts letter song at 15 seconds in
+    letterEndTime: 0,
+    letterVolume: 0.7
+  }
+
+Tips:
+- You can write times as minutes:seconds (like "0:30", "1:15")
+  or as raw seconds (like 45, 75).
+- If your song has a long silence or spoken intro, set `mainStartTime`
+  to jump straight into the romantic melody or chorus!
+- A sleek music badge with animated sound waves in the top-right
+  corner allows muting or unmuting with one tap.
+
+
+STEP 5 — Save and test
+-----------------------
+Save gift.html, then double click or refresh in your browser.
+Test the PIN, countdown, music, and the puzzle.
+Everything is ready for her 27th September birthday!
