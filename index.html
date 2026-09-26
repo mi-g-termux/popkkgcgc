@@ -1185,8 +1185,8 @@
 
   <div id="bg"></div>
   <div id="confetti"></div>
-  <audio id="audioMain" loop preload="auto"></audio>
-  <audio id="audioLetter" loop preload="auto"></audio>
+  <audio id="audioMain" loop preload="auto" playsinline webkit-playsinline></audio>
+  <audio id="audioLetter" loop preload="auto" playsinline webkit-playsinline></audio>
   <div class="music-pill" id="musicPill" onclick="toggleMute()" title="Music controls">
     <div class="music-bars" id="musicBars">
       <span></span><span></span><span></span>
@@ -1465,7 +1465,10 @@ Happy Birthday. You deserve every good thing the universe has to offer. Today an
       if (id === 'stage-balloons') setupBalloons();
       if (id === 'stage-puzzle') setupPuzzle();
       if (id === 'stage-scratch') setupScratch();
-      if (id === 'stage-letter') resetLetter();
+      if (id === 'stage-letter') {
+        resetLetter();
+        switchToLetterMusic();
+      }
     }
 
     $('heroTitle').textContent = `Happy Birthday ${CONFIG.name}! 🎂`;
@@ -1477,6 +1480,7 @@ Happy Birthday. You deserve every good thing the universe has to offer. Today an
     let musicStarted = false;
     let isMuted = false;
     let activeAudio = audioMain;
+    let letterMusicActive = false;
 
     if (CONFIG.music.mainTrack) audioMain.src = CONFIG.music.mainTrack;
     if (CONFIG.music.letterTrack) audioLetter.src = CONFIG.music.letterTrack;
@@ -1507,51 +1511,41 @@ Happy Birthday. You deserve every good thing the universe has to offer. Today an
       }
     }
 
-    function fadeTo(el, target, ms, onDone) {
-      const steps = 16, stepTime = ms / steps;
-      const start = el.volume, diff = target - start;
-      let i = 0;
-      clearInterval(el._fadeTimer);
-      el._fadeTimer = setInterval(() => {
-        i++;
-        el.volume = Math.max(0, Math.min(1, start + diff * (i / steps)));
-        if (i >= steps) { clearInterval(el._fadeTimer); if (onDone) onDone(); }
-      }, stepTime);
-    }
-
     function playTrackWithStart(audioEl, startSec, targetVol, onDone) {
-      if (!audioEl.getAttribute('src')) return;
+      if (!audioEl) return;
       activeAudio = audioEl;
+      audioEl.muted = isMuted;
 
-      const applySeekAndPlay = () => {
-        try {
-          if (startSec > 0 && Math.abs(audioEl.currentTime - startSec) > 0.6) {
-            audioEl.currentTime = startSec;
-          }
-        } catch (e) { }
-        audioEl.volume = 0;
-        const p = audioEl.play();
-        if (p !== undefined) {
-          p.then(() => {
-            fadeTo(audioEl, isMuted ? 0 : targetVol, 700, onDone);
-            updateMusicBars(true);
-          }).catch(() => { });
+      try {
+        audioEl.volume = isMuted ? 0 : targetVol;
+      } catch (e) {}
+
+      const applySeek = () => {
+        if (startSec > 0) {
+          try {
+            if (Math.abs(audioEl.currentTime - startSec) > 0.8) {
+              audioEl.currentTime = startSec;
+            }
+          } catch (e) {}
         }
       };
 
       if (audioEl.readyState >= 1) {
-        applySeekAndPlay();
+        applySeek();
       } else {
-        audioEl.addEventListener('loadedmetadata', applySeekAndPlay, { once: true });
-        audioEl.load();
-        const p = audioEl.play();
-        if (p !== undefined) {
-          p.then(() => {
-            try { if (startSec > 0) audioEl.currentTime = startSec; } catch (e) { }
-            fadeTo(audioEl, isMuted ? 0 : targetVol, 700, onDone);
-            updateMusicBars(true);
-          }).catch(() => { });
-        }
+        audioEl.addEventListener('loadedmetadata', applySeek, { once: true });
+        audioEl.addEventListener('canplay', applySeek, { once: true });
+      }
+
+      const p = audioEl.play();
+      if (p !== undefined) {
+        p.then(() => {
+          applySeek();
+          updateMusicBars(!isMuted);
+          if (onDone) onDone();
+        }).catch(err => {
+          console.warn("Audio play request:", err);
+        });
       }
     }
 
@@ -1559,23 +1553,105 @@ Happy Birthday. You deserve every good thing the universe has to offer. Today an
       if (musicStarted || !CONFIG.music.mainTrack) return;
       musicStarted = true;
       const startSec = parseSeconds(CONFIG.music.mainStartTime);
-      const vol = CONFIG.music.mainVolume || 0.65;
+      const vol = CONFIG.music.mainVolume || 0.7;
       playTrackWithStart(audioMain, startSec, vol);
+
+      // Pre-warm / unlock audioLetter on mobile so iOS/Android won't block it later
+      if (CONFIG.music.letterTrack && audioLetter) {
+        try {
+          audioLetter.load();
+          const p = audioLetter.play();
+          if (p !== undefined) {
+            p.then(() => {
+              audioLetter.pause();
+              const letterStart = parseSeconds(CONFIG.music.letterStartTime);
+              if (letterStart > 0) {
+                try { audioLetter.currentTime = letterStart; } catch (e) {}
+              }
+            }).catch(() => {});
+          }
+        } catch (e) {}
+      }
     }
 
     function switchToLetterMusic() {
       if (!CONFIG.music.letterTrack) return;
-      if (CONFIG.music.mainTrack) fadeTo(audioMain, 0, 700, () => audioMain.pause());
+      if (letterMusicActive && activeAudio === audioLetter && !audioLetter.paused) return;
+      letterMusicActive = true;
+
+      // 1. Immediately STOP the previous music (no overlapping or delayed fade on mobile)
+      if (audioMain) {
+        try {
+          audioMain.pause();
+          audioMain.currentTime = 0;
+        } catch (e) {}
+      }
+
+      // 2. Play the letter song
       const startSec = parseSeconds(CONFIG.music.letterStartTime);
-      const vol = CONFIG.music.letterVolume || 0.65;
-      playTrackWithStart(audioLetter, startSec, vol);
+      const vol = CONFIG.music.letterVolume || 0.7;
+      activeAudio = audioLetter;
+      audioLetter.muted = isMuted;
+
+      try {
+        audioLetter.volume = isMuted ? 0 : vol;
+      } catch (e) {}
+
+      const applyLetterSeek = () => {
+        if (startSec > 0) {
+          try {
+            if (Math.abs(audioLetter.currentTime - startSec) > 0.8) {
+              audioLetter.currentTime = startSec;
+            }
+          } catch (e) {}
+        }
+      };
+
+      if (audioLetter.readyState >= 1) {
+        applyLetterSeek();
+      } else {
+        audioLetter.addEventListener('loadedmetadata', applyLetterSeek, { once: true });
+        audioLetter.addEventListener('canplay', applyLetterSeek, { once: true });
+      }
+
+      const p = audioLetter.play();
+      if (p !== undefined) {
+        p.then(() => {
+          applyLetterSeek();
+          updateMusicBars(!isMuted);
+        }).catch(err => {
+          console.warn("audioLetter play failed, falling back to audioMain:", err);
+          // Seamless fallback for mobile devices that strictly allow only 1 audio element:
+          try {
+            audioMain.src = CONFIG.music.letterTrack;
+            audioMain.muted = isMuted;
+            try { audioMain.volume = isMuted ? 0 : vol; } catch (e) {}
+            if (startSec > 0) {
+              try { audioMain.currentTime = startSec; } catch (e) {}
+            }
+            const p2 = audioMain.play();
+            if (p2 !== undefined) {
+              p2.then(() => {
+                activeAudio = audioMain;
+                updateMusicBars(!isMuted);
+              }).catch(() => {});
+            }
+          } catch (e) {}
+        });
+      }
     }
 
     function toggleMute() {
       isMuted = !isMuted;
-      $('muteIcon').textContent = isMuted ? '🔇' : '🔊';
-      if (audioMain) audioMain.volume = isMuted ? 0 : (CONFIG.music.mainVolume || 0.65);
-      if (audioLetter) audioLetter.volume = isMuted ? 0 : (CONFIG.music.letterVolume || 0.65);
+      $('muteIcon').textContent = isMuted ? '🔇' : '🎵';
+      if (audioMain) {
+        audioMain.muted = isMuted;
+        try { audioMain.volume = isMuted ? 0 : (CONFIG.music.mainVolume || 0.7); } catch (e) {}
+      }
+      if (audioLetter) {
+        audioLetter.muted = isMuted;
+        try { audioLetter.volume = isMuted ? 0 : (CONFIG.music.letterVolume || 0.7); } catch (e) {}
+      }
       updateMusicBars(!isMuted && musicStarted);
     }
 
