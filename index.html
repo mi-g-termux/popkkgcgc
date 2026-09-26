@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>A Gift For You</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
     href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Poppins:wght@300;400;500;600;700&display=swap"
     rel="stylesheet">
@@ -1185,8 +1186,8 @@
 
   <div id="bg"></div>
   <div id="confetti"></div>
-  <audio id="audioMain" loop preload="auto" playsinline webkit-playsinline></audio>
-  <audio id="audioLetter" loop preload="auto" playsinline webkit-playsinline></audio>
+  <audio id="audioMain" loop preload="none" playsinline webkit-playsinline></audio>
+  <audio id="audioLetter" loop preload="none" playsinline webkit-playsinline></audio>
   <div class="music-pill" id="musicPill" onclick="toggleMute()" title="Music controls">
     <div class="music-bars" id="musicBars">
       <span></span><span></span><span></span>
@@ -1452,15 +1453,20 @@ Happy Birthday. You deserve every good thing the universe has to offer. Today an
         setTimeout(() => p.remove(), 9000);
       }
     }
-    triggerConfettiBurst(40);
-
     /* ---------- navigation ---------- */
     function goTo(id) {
       document.querySelectorAll('.stage').forEach(s => s.classList.remove('active'));
       $(id).classList.add('active');
       window.scrollTo({ top: 0, behavior: 'smooth' });
       if (id === 'stage-hero') startCounters();
-      if (id === 'stage-cake') setupCake();
+      if (id === 'stage-cake') {
+        setupCake();
+        // Lazy-preload letter song during cake/balloons so it's ready without slowing down initial page load
+        if (CONFIG.music.letterTrack && (!audioLetter.src || audioLetter.src === '')) {
+          audioLetter.src = CONFIG.music.letterTrack;
+          audioLetter.preload = "auto";
+        }
+      }
       if (id === 'stage-memories') setupMemories();
       if (id === 'stage-balloons') setupBalloons();
       if (id === 'stage-puzzle') setupPuzzle();
@@ -1481,9 +1487,6 @@ Happy Birthday. You deserve every good thing the universe has to offer. Today an
     let isMuted = false;
     let activeAudio = audioMain;
     let letterMusicActive = false;
-
-    if (CONFIG.music.mainTrack) audioMain.src = CONFIG.music.mainTrack;
-    if (CONFIG.music.letterTrack) audioLetter.src = CONFIG.music.letterTrack;
 
     function parseSeconds(val) {
       if (typeof val === 'number') return Math.max(0, val);
@@ -1511,40 +1514,64 @@ Happy Birthday. You deserve every good thing the universe has to offer. Today an
       }
     }
 
-    function playTrackWithStart(audioEl, startSec, targetVol, onDone) {
-      if (!audioEl) return;
+    function playSongWithSeek(audioEl, src, startSec, targetVol, onDone) {
+      if (!src || !audioEl) return;
+      if (!audioEl.src || !audioEl.src.includes(src)) {
+        audioEl.src = src;
+      }
       activeAudio = audioEl;
-      audioEl.muted = isMuted;
 
-      try {
-        audioEl.volume = isMuted ? 0 : targetVol;
-      } catch (e) {}
+      // Keep muted while seeking so NOT A SINGLE NOTE from 0:00 is heard on mobile
+      audioEl.muted = true;
+      try { audioEl.volume = isMuted ? 0 : targetVol; } catch (e) {}
 
-      const applySeek = () => {
-        if (startSec > 0) {
-          try {
-            if (Math.abs(audioEl.currentTime - startSec) > 0.8) {
-              audioEl.currentTime = startSec;
-            }
-          } catch (e) {}
+      let unmuted = false;
+      const tryUnmute = () => {
+        if (unmuted) return;
+        if (startSec <= 0 || audioEl.currentTime >= startSec - 0.5) {
+          unmuted = true;
+          audioEl.muted = isMuted;
+          updateMusicBars(!isMuted);
+          if (onDone) onDone();
         }
       };
 
+      const doSeek = () => {
+        if (startSec > 0 && Math.abs(audioEl.currentTime - startSec) > 0.6) {
+          try {
+            audioEl.currentTime = startSec;
+          } catch (e) {}
+        }
+        tryUnmute();
+      };
+
       if (audioEl.readyState >= 1) {
-        applySeek();
-      } else {
-        audioEl.addEventListener('loadedmetadata', applySeek, { once: true });
-        audioEl.addEventListener('canplay', applySeek, { once: true });
+        doSeek();
       }
+
+      audioEl.addEventListener('loadedmetadata', doSeek, { once: true });
+      audioEl.addEventListener('canplay', doSeek, { once: true });
+      audioEl.addEventListener('seeked', tryUnmute);
+
+      // Continuous timeupdate guard: mobile browsers often stream from 0:00 while fetching range
+      // Keep muted and seek until currentTime is at startSec
+      const timeGuard = () => {
+        if (startSec > 0 && audioEl.currentTime < startSec - 0.5) {
+          audioEl.muted = true;
+          try { audioEl.currentTime = startSec; } catch (e) {}
+        } else {
+          tryUnmute();
+          audioEl.removeEventListener('timeupdate', timeGuard);
+        }
+      };
+      audioEl.addEventListener('timeupdate', timeGuard);
 
       const p = audioEl.play();
       if (p !== undefined) {
         p.then(() => {
-          applySeek();
-          updateMusicBars(!isMuted);
-          if (onDone) onDone();
+          doSeek();
         }).catch(err => {
-          console.warn("Audio play request:", err);
+          console.warn("Audio play error:", err);
         });
       }
     }
@@ -1554,24 +1581,7 @@ Happy Birthday. You deserve every good thing the universe has to offer. Today an
       musicStarted = true;
       const startSec = parseSeconds(CONFIG.music.mainStartTime);
       const vol = CONFIG.music.mainVolume || 0.7;
-      playTrackWithStart(audioMain, startSec, vol);
-
-      // Pre-warm / unlock audioLetter on mobile so iOS/Android won't block it later
-      if (CONFIG.music.letterTrack && audioLetter) {
-        try {
-          audioLetter.load();
-          const p = audioLetter.play();
-          if (p !== undefined) {
-            p.then(() => {
-              audioLetter.pause();
-              const letterStart = parseSeconds(CONFIG.music.letterStartTime);
-              if (letterStart > 0) {
-                try { audioLetter.currentTime = letterStart; } catch (e) {}
-              }
-            }).catch(() => {});
-          }
-        } catch (e) {}
-      }
+      playSongWithSeek(audioMain, CONFIG.music.mainTrack, startSec, vol);
     }
 
     function switchToLetterMusic() {
@@ -1579,7 +1589,7 @@ Happy Birthday. You deserve every good thing the universe has to offer. Today an
       if (letterMusicActive && activeAudio === audioLetter && !audioLetter.paused) return;
       letterMusicActive = true;
 
-      // 1. Immediately STOP the previous music (no overlapping or delayed fade on mobile)
+      // 1. Immediately stop previous music
       if (audioMain) {
         try {
           audioMain.pause();
@@ -1587,58 +1597,10 @@ Happy Birthday. You deserve every good thing the universe has to offer. Today an
         } catch (e) {}
       }
 
-      // 2. Play the letter song
+      // 2. Play letter music with seek guard so 0:00 never plays
       const startSec = parseSeconds(CONFIG.music.letterStartTime);
       const vol = CONFIG.music.letterVolume || 0.7;
-      activeAudio = audioLetter;
-      audioLetter.muted = isMuted;
-
-      try {
-        audioLetter.volume = isMuted ? 0 : vol;
-      } catch (e) {}
-
-      const applyLetterSeek = () => {
-        if (startSec > 0) {
-          try {
-            if (Math.abs(audioLetter.currentTime - startSec) > 0.8) {
-              audioLetter.currentTime = startSec;
-            }
-          } catch (e) {}
-        }
-      };
-
-      if (audioLetter.readyState >= 1) {
-        applyLetterSeek();
-      } else {
-        audioLetter.addEventListener('loadedmetadata', applyLetterSeek, { once: true });
-        audioLetter.addEventListener('canplay', applyLetterSeek, { once: true });
-      }
-
-      const p = audioLetter.play();
-      if (p !== undefined) {
-        p.then(() => {
-          applyLetterSeek();
-          updateMusicBars(!isMuted);
-        }).catch(err => {
-          console.warn("audioLetter play failed, falling back to audioMain:", err);
-          // Seamless fallback for mobile devices that strictly allow only 1 audio element:
-          try {
-            audioMain.src = CONFIG.music.letterTrack;
-            audioMain.muted = isMuted;
-            try { audioMain.volume = isMuted ? 0 : vol; } catch (e) {}
-            if (startSec > 0) {
-              try { audioMain.currentTime = startSec; } catch (e) {}
-            }
-            const p2 = audioMain.play();
-            if (p2 !== undefined) {
-              p2.then(() => {
-                activeAudio = audioMain;
-                updateMusicBars(!isMuted);
-              }).catch(() => {});
-            }
-          } catch (e) {}
-        });
-      }
+      playSongWithSeek(audioLetter, CONFIG.music.letterTrack, startSec, vol);
     }
 
     function toggleMute() {
